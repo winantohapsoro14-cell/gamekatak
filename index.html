@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kuis Katak Lompat - Advance Effect</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background-color: #081105;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-board {
+            width: 1000px;
+            height: 560px;
+            background: radial-gradient(circle at 50% 50%, #2fbdf1 0%, #1793d1 70%, #0e6799 100%);
+            position: relative;
+            border-radius: 16px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+            overflow: hidden;
+            border: 5px solid #0d4a6e;
+        }
+
+        /* Water Waves Effect */
+        .water-wave-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.45;
+            pointer-events: none;
+            transition: transform 0.6s ease-in-out;
+        }
+
+        /* --- TOP BAR HEADER --- */
+        #top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 58px;
+            background-color: #74ba1f;
+            border-bottom: 4px solid #558a14;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 18px;
+            z-index: 50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .hud-box {
+            background-color: rgba(0, 0, 0, 0.25);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 12px;
+            padding: 4px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ffffff;
+            font-family: 'Fredoka One', cursive;
+            font-size: 14px;
+        }
+
+        .hud-value {
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .hud-icon-heart {
+            color: #ffffff;
+            font-size: 18px;
+        }
+
+        .hud-icon-e {
+            background-color: #ffffff;
+            color: #74ba1f;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .game-title {
+            color: #ffffff;
+            font-family: 'Fredoka One', cursive;
+            font-size: 22px;
+            letter-spacing: 1px;
+            text-shadow: 1px 2px 3px rgba(0,0,0,0.3);
+        }
+
+        /* --- QUESTION BOX --- */
+        #question-panel {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 82%;
+            background-color: #ffffff;
+            border-radius: 16px;
+            padding: 12px 24px;
+            text-align: center;
+            border: 3px solid #f39c12;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+            z-index: 40;
+            transition: opacity 0.3s;
+        }
+
+        .q-badge {
+            background-color: #e67e22;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 2px 10px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .q-text {
+            color: #2c3e50;
+            font-size: 16px;
+            font-weight: 800;
+            text-transform: uppercase;
+            line-height: 1.3;
+        }
+
+        /* --- WORLD LAYER (LAYER UNTUK ANIMASI MAJU / SCROLL) --- */
+        #world-layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* --- LILY PAD CONTAINER --- */
+        .pad-container {
+            position: absolute;
+            width: 155px;
+            height: 155px;
+            cursor: pointer;
+            z-index: 10;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
+        }
+
+        .pad-container:hover {
+            transform: scale(1.08) rotate(2deg);
+        }
+
+        .pad-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0px 10px 8px rgba(0,0,0,0.45));
+        }
+
+        .pad-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffffff;
+            font-family: 'Fredoka One', cursive;
+            font-size: 14px;
+            text-align: center;
+            width: 78%;
+            text-shadow: 1px 2px 4px rgba(0,0,0,0.9);
+            pointer-events: none;
+            line-height: 1.25;
+            text-transform: uppercase;
+        }
+
+        /* --- KATAK (FROG PLAYER) --- */
+        #frog-player {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            z-index: 30;
+            pointer-events: none;
+            transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1), transform 0.6s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .frog-svg {
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0px 8px 6px rgba(0,0,0,0.4));
+        }
+
+        /* --- ANIMASI TENGGELAM --- */
+        .sinking {
+            animation: sinkOrganic 1.2s forwards cubic-bezier(0.55, 0.085, 0.68, 0.53) !important;
+        }
+
+        @keyframes sinkOrganic {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+                filter: none;
+            }
+            50% {
+                transform: scale(0.6) rotate(20deg) translateY(20px);
+                opacity: 0.6;
+                filter: blur(1px);
+            }
+            100% {
+                transform: scale(0) rotate(50deg) translateY(60px);
+                opacity: 0;
+                filter: blur(6px);
+            }
+        }
+
+        /* --- WATER SPLASH --- */
+        .water-splash {
+            position: absolute;
+            width: 140px;
+            height: 70px;
+            border: 4px solid rgba(255, 255, 255, 0.85);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 25;
+            animation: splashExpand 0.75s ease-out forwards;
+        }
+
+        @keyframes splashExpand {
+            0% { transform: scale(0.2); opacity: 1; }
+            100% { transform: scale(1.9); opacity: 0; }
+        }
+
+        /* --- BOTTOM CONTROLS --- */
+        #bottom-bar {
+            position: absolute;
+            bottom: 14px;
+            left: 18px;
+            right: 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 50;
+        }
+
+        .timer-widget {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timer-circle {
+            width: 52px;
+            height: 52px;
+            background: #ffffff;
+            border-radius: 50%;
+            border: 5px solid #74ba1f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Fredoka One', cursive;
+            font-size: 20px;
+            color: #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
+        .timer-pill {
+            background-color: #ffffff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 16px;
+            color: #2c3e50;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        }
+
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            background-color: #92db2c;
+            border: 2px solid #ffffff;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            color: #2c3e50;
+            font-size: 18px;
+        }
+
+        /* --- MODAL --- */
+        .modal-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.75);
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 420px;
+            border: 5px solid #74ba1f;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal-card h2 {
+            font-family: 'Fredoka One', cursive;
+            color: #558a14;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .modal-card p {
+            font-size: 15px;
+            color: #555;
+            font-weight: bold;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+
+        .btn-start {
+            background: #74ba1f;
+            color: #fff;
+            border: none;
+            padding: 12px 36px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 18px;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #436d10;
+            transition: transform 0.1s;
+        }
+
+        .btn-start:active {
+            transform: translateY(3px);
+            box-shadow: 0 2px 0 #436d10;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-board">
+    <!-- Air Kolam Waves -->
+    <svg class="water-wave-svg" id="water-bg" viewBox="0 0 1000 560">
+        <path d="M 0,100 Q 250,140 500,100 T 1000,100" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+        <path d="M 0,260 Q 300,220 600,270 T 1000,240" fill="none" stroke="#ffffff" stroke-width="2"/>
+        <path d="M 0,420 Q 200,460 500,410 T 1000,440" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+    </svg>
+
+    <!-- Top Bar Header -->
+    <div id="top-bar">
+        <div class="hud-box">
+            <span>LIVES</span>
+            <span class="hud-icon-heart">♥</span>
+            <span class="hud-value" id="lives-val">10</span>
+        </div>
+
+        <div class="game-title">KUIS KATAK LOMPAT</div>
+
+        <div class="hud-box">
+            <span>SCORE</span>
+            <div class="hud-icon-e">e</div>
+            <span class="hud-value" id="score-val">0</span>
+        </div>
+    </div>
+
+    <!-- Question Box -->
+    <div id="question-panel">
+        <div class="q-badge" id="q-number">Pertanyaan 1 / 5</div>
+        <div class="q-text" id="q-text">MEMUAT PERTANYAAN...</div>
+    </div>
+
+    <!-- SVG DEKORASI DAUN TERATAI -->
+    <svg style="display: none;">
+        <defs>
+            <g id="educaplay-lilypad">
+                <circle cx="100" cy="100" r="88" fill="#244208" stroke="#122403" stroke-width="3"/>
+                <polygon points="100,100 50,20 85,12" fill="#2ebef2"/>
+                <polygon points="100,100 188,85 188,115" fill="#2ebef2"/>
+                <polygon points="100,100 35,160 58,180" fill="#2ebef2"/>
+                <path d="M 100 100 L 140 25 M 100 100 L 170 145 M 100 100 L 110 185 M 100 100 L 20 100" stroke="#182e05" stroke-width="2"/>
+            </g>
+        </defs>
+    </svg>
+
+    <!-- WORLD LAYER (UNTUK ANIMASI MAJU / SCROLLING) -->
+    <div id="world-layer">
+        <!-- DEKORASI TERATAI LATAR -->
+        <div class="pad-container" style="top: 100px; left: 20px; transform: scale(0.7) rotate(-20deg); pointer-events: none;">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+        </div>
+        <div class="pad-container" style="top: 100px; right: 20px; transform: scale(0.75) rotate(40deg); pointer-events: none;">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+        </div>
+
+        <!-- TERATAI PILIHAN A, B, C -->
+        <div class="pad-container" id="pad-A" style="top: 245px; left: 175px;" onclick="selectOption('A')">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+            <div class="pad-label" id="text-A">A</div>
+        </div>
+
+        <div class="pad-container" id="pad-B" style="top: 215px; left: 422px;" onclick="selectOption('B')">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+            <div class="pad-label" id="text-B">B</div>
+        </div>
+
+        <div class="pad-container" id="pad-C" style="top: 245px; left: 670px;" onclick="selectOption('C')">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+            <div class="pad-label" id="text-C">C</div>
+        </div>
+
+        <!-- TERATAI AWAL KATAK -->
+        <div class="pad-container" id="pad-start" style="top: 375px; left: 422px; cursor: default;">
+            <svg class="pad-svg" viewBox="0 0 200 200"><use href="#educaplay-lilypad"/></svg>
+        </div>
+
+        <!-- KATAK (FROG PLAYER) -->
+        <div id="frog-player">
+            <svg class="frog-svg" viewBox="0 0 200 200">
+                <g stroke="#1b3803" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round">
+                    <path d="M 72 138 C 50 145 32 125 35 105 C 38 95 46 95 50 102 C 55 112 68 128 80 132" fill="#6fbe27"/>
+                    <path d="M 38 98 L 22 88 M 36 94 L 18 100 M 37 102 L 24 114 M 40 108 L 32 124" fill="none"/>
+                    <circle cx="20" cy="87" r="4.5" fill="#6fbe27"/>
+                    <circle cx="16" cy="100" r="4.5" fill="#6fbe27"/>
+                    <circle cx="22" cy="115" r="4.5" fill="#6fbe27"/>
+                    <circle cx="31" cy="125" r="4.5" fill="#6fbe27"/>
+
+                    <path d="M 128 138 C 150 145 168 125 165 105 C 162 95 154 95 150 102 C 145 112 132 128 120 132" fill="#6fbe27"/>
+                    <path d="M 162 98 L 178 88 M 164 94 L 182 100 M 163 102 L 176 114 M 160 108 L 168 124" fill="none"/>
+                    <circle cx="180" cy="87" r="4.5" fill="#6fbe27"/>
+                    <circle cx="184" cy="100" r="4.5" fill="#6fbe27"/>
+                    <circle cx="178" cy="115" r="4.5" fill="#6fbe27"/>
+                    <circle cx="169" cy="125" r="4.5" fill="#6fbe27"/>
+
+                    <path d="M 75 92 C 60 78 48 58 52 42 C 54 36 60 40 60 48 C 60 58 72 78 80 82" fill="#6fbe27"/>
+                    <path d="M 52 42 L 38 34 M 53 40 L 46 22 M 56 39 L 60 18 M 59 42 L 72 26" fill="none"/>
+                    <circle cx="36" cy="33" r="4.5" fill="#6fbe27"/>
+                    <circle cx="45" cy="20" r="4.5" fill="#6fbe27"/>
+                    <circle cx="60" cy="16" r="4.5" fill="#6fbe27"/>
+                    <circle cx="73" cy="24" r="4.5" fill="#6fbe27"/>
+
+                    <path d="M 125 92 C 140 78 152 58 148 42 C 146 36 140 40 140 48 C 140 58 128 78 120 82" fill="#6fbe27"/>
+                    <path d="M 148 42 L 162 34 M 147 40 L 154 22 M 144 39 L 140 18 M 141 42 L 128 26" fill="none"/>
+                    <circle cx="164" cy="33" r="4.5" fill="#6fbe27"/>
+                    <circle cx="155" cy="20" r="4.5" fill="#6fbe27"/>
+                    <circle cx="140" cy="16" r="4.5" fill="#6fbe27"/>
+                    <circle cx="127" cy="24" r="4.5" fill="#6fbe27"/>
+
+                    <ellipse cx="100" cy="115" rx="32" ry="38" fill="#6fbe27"/>
+
+                    <path d="M 72 88 Q 100 102 128 88 L 124 102 Q 100 114 76 102 Z" fill="#621475"/>
+                    <path d="M 70 100 Q 100 108 130 100 L 124 145 Q 100 156 76 145 Z" fill="#8d27a1"/>
+                    
+                    <rect x="83" y="115" width="34" height="30" rx="8" fill="#74ba1f" stroke="#1b3803" stroke-width="2.5"/>
+                    <text x="100" y="137" font-size="22" fill="#ffffff" font-family="'Fredoka One', cursive" text-anchor="middle" font-weight="bold" stroke="none">e</text>
+
+                    <ellipse cx="100" cy="72" rx="42" ry="28" fill="#6fbe27"/>
+
+                    <ellipse cx="78" cy="50" rx="16" ry="17" fill="#ffffff"/>
+                    <ellipse cx="78" cy="42" rx="6" ry="4" fill="#1b3803"/>
+                    <ellipse cx="122" cy="50" rx="16" ry="17" fill="#ffffff"/>
+                    <ellipse cx="122" cy="42" rx="6" ry="4" fill="#1b3803"/>
+
+                    <path d="M 68 31 Q 78 27 86 33" fill="none" stroke="#1b3803" stroke-width="2.5"/>
+                    <path d="M 114 33 Q 122 27 132 31" fill="none" stroke="#1b3803" stroke-width="2.5"/>
+                </g>
+
+                <path d="M 65 68 Q 80 58 95 65" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" opacity="0.6"/>
+                <path d="M 105 65 Q 120 58 135 68" fill="none" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" opacity="0.6"/>
+                <path d="M 40 108 C 42 120 55 132 68 136" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+                <path d="M 160 108 C 158 120 145 132 132 136" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+                <path d="M 76 106 L 78 138" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" opacity="0.4"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div id="bottom-bar">
+        <div class="timer-widget">
+            <div class="timer-circle" id="timer-sec">18</div>
+            <div class="timer-pill">00:<span id="timer-digit">18</span></div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <div class="btn-icon">⚙️</div>
+            <div class="btn-icon">⛶</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Screen -->
+<div class="modal-bg" id="modal">
+    <div class="modal-card">
+        <h2 id="modal-title">KUIS KATAK LOMPAT</h2>
+        <p id="modal-desc">Pilih daun teratai yang benar untuk membantu katak menyeberang! Jika salah, teratai dan katak akan tenggelam.</p>
+        <button class="btn-start" onclick="startGame()">MULAI MAIN</button>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            q: "Organel sel yang menghasilkan energi ATP utama adalah...",
+            options: { A: "Mitokondria", B: "Lisosom", C: "Ribosom" },
+            correct: "A"
+        },
+        {
+            q: "Proses perpindahan air melalui membran semipermeabel adalah...",
+            options: { A: "Difusi", B: "Osmosis", C: "Endositosis" },
+            correct: "B"
+        },
+        {
+            q: "Bagian sel yang HANYA dimiliki oleh sel tumbuhan adalah...",
+            options: { A: "Membran Sel", B: "Dinding Sel", C: "Centriol" },
+            correct: "B"
+        },
+        {
+            q: "Sintesis protein di dalam sel terjadi pada organel...",
+            options: { A: "Badan Golgi", B: "Vakuola", C: "Ribosom" },
+            correct: "C"
+        },
+        {
+            q: "Cairan pengisi di dalam sel tempat organel melayang disebut...",
+            options: { A: "Sitoplasma", B: "Nukleus", C: "Membran" },
+            correct: "A"
+        }
+    ];
+
+    let currentQIndex = 0;
+    let lives = 10;
+    let score = 0;
+    let timeLeft = 18;
+    let timerInterval = null;
+    let isAnimating = false;
+
+    const padCoords = {
+        start: { x: 500, y: 452 },
+        A: { x: 252, y: 322 },
+        B: { x: 500, y: 292 },
+        C: { x: 748, y: 322 }
+    };
+
+    function startGame() {
+        document.getElementById('modal').style.display = 'none';
+        currentQIndex = 0;
+        lives = 10;
+        score = 0;
+        updateHUD();
+        loadQuestion();
+    }
+
+    function updateHUD() {
+        document.getElementById('lives-val').textContent = lives;
+        document.getElementById('score-val').textContent = score;
+    }
+
+    function loadQuestion() {
+        if (currentQIndex >= questions.length) {
+            showEndGame(true);
+            return;
+        }
+
+        isAnimating = false;
+        resetPadsAndFrog();
+
+        const q = questions[currentQIndex];
+        document.getElementById('q-number').textContent = `Pertanyaan ${currentQIndex + 1} / ${questions.length}`;
+        document.getElementById('q-text').textContent = q.q;
+
+        document.getElementById('text-A').textContent = q.options.A;
+        document.getElementById('text-B').textContent = q.options.B;
+        document.getElementById('text-C').textContent = q.options.C;
+
+        startTimer();
+    }
+
+    function resetPadsAndFrog() {
+        const worldLayer = document.getElementById('world-layer');
+        const qPanel = document.getElementById('question-panel');
+        
+        // Reset Transform World & Opacity
+        worldLayer.style.transition = 'none';
+        worldLayer.style.transform = 'translateY(0px)';
+        qPanel.style.opacity = '1';
+
+        ['A', 'B', 'C'].forEach(id => {
+            const pad = document.getElementById(`pad-${id}`);
+            pad.classList.remove('sinking');
+            pad.style.opacity = '1';
+        });
+
+        const frog = document.getElementById('frog-player');
+        frog.classList.remove('sinking');
+        frog.style.opacity = '1';
+        frog.style.left = padCoords.start.x + 'px';
+        frog.style.top = padCoords.start.y + 'px';
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = 18;
+        updateTimerDisplay();
+
+        timerInterval = setInterval(() => {
+            timeLeft--;
+            updateTimerDisplay();
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                handleWrongAnswer('timeout');
+            }
+        }, 1000);
+    }
+
+    function updateTimerDisplay() {
+        document.getElementById('timer-sec').textContent = timeLeft;
+        document.getElementById('timer-digit').textContent = timeLeft < 10 ? '0' + timeLeft : timeLeft;
+    }
+
+    function selectOption(choice) {
+        if (isAnimating) return;
+        isAnimating = true;
+        clearInterval(timerInterval);
+
+        const frog = document.getElementById('frog-player');
+        const targetPos = padCoords[choice];
+        const currentQ = questions[currentQIndex];
+
+        // 1. Katak Melompat ke pilihan
+        frog.style.left = targetPos.x + 'px';
+        frog.style.top = targetPos.y + 'px';
+
+        setTimeout(() => {
+            if (choice === currentQ.correct) {
+                score += 100;
+                updateHUD();
+                
+                // 2. Animasi Katak & Kolam Meluncur Maju Ke Depan
+                animateAdvanceForward(choice);
+            } else {
+                handleWrongAnswer(choice);
+            }
+        }, 400);
+    }
+
+    function animateAdvanceForward(correctChoice) {
+        const worldLayer = document.getElementById('world-layer');
+        const qPanel = document.getElementById('question-panel');
+
+        // Sembunyikan pilihan yang salah
+        ['A', 'B', 'C'].forEach(id => {
+            if (id !== correctChoice) {
+                document.getElementById(`pad-${id}`).style.opacity = '0';
+            }
+        });
+
+        // Hitung jarak meluncur turun (Sesuai posisi Y daun yang dipilih)
+        const offsetY = padCoords.start.y - padCoords[correctChoice].y;
+
+        // Efek Meluncur (Katak seolah terus berjalan ke depan)
+        setTimeout(() => {
+            qPanel.style.opacity = '0';
+            worldLayer.style.transition = 'transform 0.55s cubic-bezier(0.4, 0, 0.2, 1)';
+            worldLayer.style.transform = `translateY(${offsetY}px)`;
+        }, 150);
+
+        setTimeout(() => {
+            currentQIndex++;
+            loadQuestion();
+        }, 750);
+    }
+
+    function handleWrongAnswer(choice) {
+        lives--;
+        updateHUD();
+
+        if (choice !== 'timeout') {
+            const pad = document.getElementById(`pad-${choice}`);
+            const frog = document.getElementById('frog-player');
+
+            createSplash(padCoords[choice].x, padCoords[choice].y);
+
+            pad.classList.add('sinking');
+            frog.classList.add('sinking');
+        }
+
+        setTimeout(() => {
+            if (lives <= 0) {
+                showEndGame(false);
+            } else {
+                resetPadsAndFrog();
+                isAnimating = false;
+                startTimer();
+            }
+        }, 1200);
+    }
+
+    function createSplash(x, y) {
+        const board = document.getElementById('game-board');
+        const splash = document.createElement('div');
+        splash.className = 'water-splash';
+        splash.style.left = (x - 70) + 'px';
+        splash.style.top = (y - 35) + 'px';
+        board.appendChild(splash);
+
+        setTimeout(() => splash.remove(), 750);
+    }
+
+    function showEndGame(isWin) {
+        clearInterval(timerInterval);
+        const modal = document.getElementById('modal');
+        const title = document.getElementById('modal-title');
+        const desc = document.getElementById('modal-desc');
+
+        if (isWin) {
+            title.textContent = "SELAMAT! 🎉";
+            desc.textContent = `Kamu berhasil menyeberangi kolam dengan Skor Akhir: ${score}`;
+        } else {
+            title.textContent = "GAME OVER 💦";
+            desc.textContent = `Nyawa kamu habis karena katak tenggelam! Skor Akhir: ${score}`;
+        }
+
+        modal.style.display = 'flex';
+    }
+</script>
+
+</body>
+</html>
